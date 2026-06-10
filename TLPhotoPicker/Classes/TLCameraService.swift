@@ -205,6 +205,13 @@ extension TLCameraService: UIImagePickerControllerDelegate, UINavigationControll
                     try FileManager.default.copyItem(at: imageURL, to: destURL)
                     capturedURL = destURL
                 } catch {}
+            } else if let image = info[.originalImage] as? UIImage,
+                      let data = image.jpegData(compressionQuality: 1.0) {
+                let destURL = tempDir.appendingPathComponent(UUID().uuidString + ".jpg")
+                do {
+                    try data.write(to: destURL)
+                    capturedURL = destURL
+                } catch {}
             }
             picker.dismiss(animated: true) {
                 if let capturedURL { bypass(capturedURL) }
