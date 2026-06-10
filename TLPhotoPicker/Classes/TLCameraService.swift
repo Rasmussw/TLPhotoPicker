@@ -211,7 +211,9 @@ extension TLCameraService: UIImagePickerControllerDelegate, UINavigationControll
             }
             return
         }
-        picker.dismiss(animated: true, completion: nil) else if let image = info[.originalImage] as? UIImage {
+        picker.dismiss(animated: true, completion: nil)
+
+        if let image = info[.originalImage] as? UIImage {
             saveCapturedAsset(image: image)
         } else if let mediaType = info[.mediaType] as? String {
             let isMovieType: Bool
