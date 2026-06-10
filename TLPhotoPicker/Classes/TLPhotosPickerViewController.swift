@@ -123,7 +123,14 @@ open class TLPhotosPickerViewController: UIViewController {
     @objc open var dismissCompletion: (() -> Void)? = nil
     public var didCaptureMediaURL: ((URL) -> Void)? {
         get { cameraService.didCaptureMediaURL }
-        set { cameraService.didCaptureMediaURL = newValue }
+        set {
+            guard let newValue else { cameraService.didCaptureMediaURL = nil; return }
+            cameraService.didCaptureMediaURL = { [weak self] url in
+                self?.dismiss(animated: true) {
+                    newValue(url)
+                }
+            }
+        }
     }
     private var completionWithPHAssets: (([PHAsset]) -> Void)? = nil
     private var completionWithTLPHAssets: (([TLPHAsset]) -> Void)? = nil
