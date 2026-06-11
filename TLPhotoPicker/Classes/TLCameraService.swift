@@ -190,36 +190,43 @@ extension TLCameraService: UIImagePickerControllerDelegate, UINavigationControll
 
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
         if let bypass = didCaptureMediaURL {
-            let tempDir = FileManager.default.temporaryDirectory
-            var capturedURL: URL?
-            if let videoURL = info[.mediaURL] as? URL {
-                let destURL = tempDir.appendingPathComponent(UUID().uuidString + ".mov")
-                do {
-                    try FileManager.default.copyItem(at: videoURL, to: destURL)
-                    capturedURL = destURL
-                } catch {}
-            } else if let imageURL = info[.imageURL] as? URL {
-                let ext = imageURL.pathExtension.isEmpty ? "jpg" : imageURL.pathExtension
-                let destURL = tempDir.appendingPathComponent(UUID().uuidString + "." + ext)
-                do {
-                    try FileManager.default.copyItem(at: imageURL, to: destURL)
-                    capturedURL = destURL
-                } catch {}
-            } else if let image = info[.originalImage] as? UIImage,
-                      let data = image.jpegData(compressionQuality: 1.0) {
-                let destURL = tempDir.appendingPathComponent(UUID().uuidString + ".jpg")
-                do {
-                    try data.write(to: destURL)
-                    capturedURL = destURL
-                } catch {}
-            }
-            picker.dismiss(animated: true) {
-                if let capturedURL { bypass(capturedURL) }
-            }
+            bypassCapturedMedia(picker: picker, info: info, bypass: bypass)
+        } else {
+            saveCapturedMediaToLibrary(picker: picker, info: info)
+        }
+    }
+
+    private func bypassCapturedMedia(picker: UIImagePickerController,
+                                     info: [UIImagePickerController.InfoKey: Any],
+                                     bypass: @escaping (URL) -> Void) {
+        let tempDir = FileManager.default.temporaryDirectory
+        var capturedURL: URL?
+        if let videoURL = info[.mediaURL] as? URL {
+            let destURL = tempDir.appendingPathComponent(UUID().uuidString + ".mov")
+            do { try FileManager.default.copyItem(at: videoURL, to: destURL); capturedURL = destURL } catch {}
+        } else if let imageURL = info[.imageURL] as? URL {
+            let ext = imageURL.pathExtension.isEmpty ? "jpg" : imageURL.pathExtension
+            let destURL = tempDir.appendingPathComponent(UUID().uuidString + "." + ext)
+            do { try FileManager.default.copyItem(at: imageURL, to: destURL); capturedURL = destURL } catch {}
+        } else if let image = info[.originalImage] as? UIImage,
+                  let data = image.jpegData(compressionQuality: 1.0) {
+            let destURL = tempDir.appendingPathComponent(UUID().uuidString + ".jpg")
+            do { try data.write(to: destURL); capturedURL = destURL } catch {}
+        }
+        guard let capturedURL else {
+            picker.dismiss(animated: true, completion: nil)
             return
         }
-        picker.dismiss(animated: true, completion: nil)
+        picker.dismiss(animated: true) { [weak self] in
+            self?.presentingViewController?.dismiss(animated: true) {
+                bypass(capturedURL)
+            }
+        }
+    }
 
+    private func saveCapturedMediaToLibrary(picker: UIImagePickerController,
+                                            info: [UIImagePickerController.InfoKey: Any]) {
+        picker.dismiss(animated: true, completion: nil)
         if let image = info[.originalImage] as? UIImage {
             saveCapturedAsset(image: image)
         } else if let mediaType = info[.mediaType] as? String {
