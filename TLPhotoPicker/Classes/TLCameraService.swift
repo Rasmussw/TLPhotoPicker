@@ -213,12 +213,15 @@ extension TLCameraService: UIImagePickerControllerDelegate, UINavigationControll
             let destURL = tempDir.appendingPathComponent(UUID().uuidString + ".jpg")
             do { try data.write(to: destURL); capturedURL = destURL } catch {}
         }
-        guard let capturedURL else {
+        guard let capturedURL = capturedURL else {
             picker.dismiss(animated: true, completion: nil)
             return
         }
         picker.dismiss(animated: true) { [weak self] in
+            let hostVC = self?.presentingViewController as? TLPhotosPickerViewController
             self?.presentingViewController?.dismiss(animated: true) {
+                hostVC?.delegate?.dismissComplete()
+                hostVC?.dismissCompletion?()
                 bypass(capturedURL)
             }
         }
